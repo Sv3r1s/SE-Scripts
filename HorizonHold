@@ -1,0 +1,45 @@
+List<IMyGyro> gyros;
+        IMyRemoteControl remcon;
+        IMyShipController cockpit;
+        float gyromult = 3;
+
+        public Program()
+        {
+            remcon = GridTerminalSystem.GetBlockWithName("RemCon") as IMyRemoteControl;
+            cockpit = GridTerminalSystem.GetBlockWithName("Cockpit") as IMyShipController;
+            gyros = new List<IMyGyro>();
+            GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros);
+        }
+
+        public void Main(string argument)
+        {
+            if (argument == ("Start"))
+            {
+                Runtime.UpdateFrequency = UpdateFrequency.Update10;
+                foreach (IMyGyro gyro in gyros)
+                {
+                    gyro.GyroOverride = true;
+                }
+            }
+            else if (argument == ("Stop"))
+            {
+                Runtime.UpdateFrequency = UpdateFrequency.None;
+                foreach (IMyGyro gyro in gyros)
+                {
+                    gyro.GyroOverride = false;
+                }
+            }
+            Vector3D gravvector = Vector3D.Normalize(remcon.GetNaturalGravity());
+            gravvector = Vector3D.Reflect(gravvector, remcon.WorldMatrix.Down);
+            float Pitch = (float)gravvector.Dot(remcon.WorldMatrix.Backward);
+            float Roll = (float)gravvector.Dot(remcon.WorldMatrix.Left);
+            float yaw = cockpit.RotationIndicator.Y;
+            foreach (IMyGyro gyro in gyros)
+            {
+                gyro.Yaw = yaw * 0.5f;
+                gyro.Pitch = Pitch * gyromult;
+                gyro.Roll = Roll * gyromult;
+            }
+
+
+        }
