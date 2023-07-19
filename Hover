@@ -1,0 +1,56 @@
+List<IMyGyro> gyros;
+        IMyShipController cockpit;
+        float gyromult = 1;
+
+        public Program()
+        {
+            cockpit = GridTerminalSystem.GetBlockWithName("Cockpit") as IMyShipController;
+            gyros = new List<IMyGyro>();
+            GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros);
+        }
+
+        public void Main(string argument)
+        {
+            if (argument == ("Start"))
+            {
+                Runtime.UpdateFrequency = UpdateFrequency.Update10;
+                foreach (IMyGyro gyro in gyros)
+                {
+                    gyro.GyroOverride = true;
+                }
+            }
+            else if (argument == ("Stop"))
+            {
+                Runtime.UpdateFrequency = UpdateFrequency.None;
+                foreach (IMyGyro gyro in gyros)
+                {
+                    gyro.GyroOverride = false;
+                }
+            }
+            Vector3D gravvector = Vector3D.Normalize(cockpit.GetNaturalGravity());
+            gravvector = Vector3D.Reflect(gravvector, cockpit.WorldMatrix.Down);
+            Vector3D speedvector = cockpit.GetShipVelocities().LinearVelocity;
+            Vector3D speedvectornorm = speedvector / 10;
+            if (speedvectornorm.Length() > 1 )
+            {
+                speedvectornorm = Vector3D.Normalize(speedvectornorm);
+            }
+
+            Vector3D forvard = Vector3D.Normalize(Vector3D.Reflect(cockpit.WorldMatrix.Forward,gravvector)) * cockpit.MoveIndicator.Z;
+            Vector3D left = Vector3D.Normalize(Vector3D.Reflect(cockpit.WorldMatrix.Left, gravvector)) * cockpit.RollIndicator;
+
+
+            Vector3D alignvector = Vector3D.Normalize(gravvector + speedvectornorm / 2 + (forvard + left) / 2);
+
+            float Pitch = (float)alignvector.Dot(cockpit.WorldMatrix.Backward);
+            float Roll = (float)alignvector.Dot(cockpit.WorldMatrix.Left);
+            float yaw = cockpit.MoveIndicator.X;
+            foreach (IMyGyro gyro in gyros)
+            {
+                gyro.Yaw = yaw * 0.5f;
+                gyro.Pitch = Pitch * gyromult;
+                gyro.Roll = Roll * gyromult;
+            }
+
+
+        }
