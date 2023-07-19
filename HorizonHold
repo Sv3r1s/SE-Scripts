@@ -1,7 +1,7 @@
 List<IMyGyro> gyros;
         IMyRemoteControl remcon;
         IMyShipController cockpit;
-        float gyromult = 3;
+        float gyromult = 2;
 
         public Program()
         {
@@ -15,7 +15,7 @@ List<IMyGyro> gyros;
         {
             if (argument == ("Start"))
             {
-                Runtime.UpdateFrequency = UpdateFrequency.Update10;
+                Runtime.UpdateFrequency = UpdateFrequency.Update1;
                 foreach (IMyGyro gyro in gyros)
                 {
                     gyro.GyroOverride = true;
@@ -30,9 +30,14 @@ List<IMyGyro> gyros;
                 }
             }
             Vector3D gravvector = Vector3D.Normalize(remcon.GetNaturalGravity());
-            gravvector = Vector3D.Reflect(gravvector, remcon.WorldMatrix.Down);
-            float Pitch = (float)gravvector.Dot(remcon.WorldMatrix.Backward);
-            float Roll = (float)gravvector.Dot(remcon.WorldMatrix.Left);
+            //gravvector = Vector3D.Reflect(gravvector, remcon.WorldMatrix.Down);
+
+            double gb = gravvector.Dot(remcon.WorldMatrix.Backward);
+            double gl = gravvector.Dot(remcon.WorldMatrix.Left);
+            double gd = gravvector.Dot(remcon.WorldMatrix.Down);
+
+            float Pitch = (float)Math.Atan2(gb,gd);
+            float Roll = (float)Math.Atan2(gl,gd);
             float yaw = cockpit.RotationIndicator.Y;
             foreach (IMyGyro gyro in gyros)
             {
