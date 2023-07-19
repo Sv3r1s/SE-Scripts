@@ -1,16 +1,25 @@
 List<IMyGyro> gyros;
+        List<IMyThrust> thrusterlist;
         IMyShipController cockpit;
         float gyromult = 1;
+        double desiredelevation = 10;
 
         public Program()
         {
             cockpit = GridTerminalSystem.GetBlockWithName("Cockpit") as IMyShipController;
             gyros = new List<IMyGyro>();
             GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros);
+            thrusterlist = new List<IMyThrust>();
+            GridTerminalSystem.GetBlocksOfType<IMyThrust>(thrusterlist);
         }
 
         public void Main(string argument)
         {
+            //коеф-ты 
+            float kV = 5;
+            float kA = 10;
+
+            //вкл/выкл
             if (argument == ("Start"))
             {
                 Runtime.UpdateFrequency = UpdateFrequency.Update10;
@@ -27,21 +36,45 @@ List<IMyGyro> gyros;
                     gyro.GyroOverride = false;
                 }
             }
-            Vector3D gravvector = Vector3D.Normalize(cockpit.GetNaturalGravity());
-            gravvector = Vector3D.Reflect(gravvector, cockpit.WorldMatrix.Down);
+            //векторы гравитации и скорости
+            Vector3D gravvector = cockpit.GetNaturalGravity();
+            Vector3D gravvectornorm = Vector3D.Normalize(gravvector);
             Vector3D speedvector = cockpit.GetShipVelocities().LinearVelocity;
+
+            //Текущая высота,вертикальная скорость и вес
+            double currentelevation = 0;
+            cockpit.TryGetPlanetElevation(MyPlanetElevation.Surface, out currentelevation);
+            float vetvelocity = -(float)speedvector.Dot(gravvectornorm);
+            float deltaelevation = (float)(desiredelevation - currentelevation);
+            float weight = (float)gravvector.Length() * cockpit.CalculateShipMass().PhysicalMass;
+
+            //косинус угла наклона корабля относительно горизонта
+            float tcos = (float)(cockpit.WorldMatrix.Down.Dot(gravvector));
+
+            //Тяга
+
+            float thrust = (weight * (deltaelevation * kV - vetvelocity) * kA) / tcos;
+            if (thrust <=0 )
+            {
+                thrust = 1;
+            }
+
+            //нормализация векторов
+            gravvectornorm = Vector3D.Reflect(gravvectornorm, cockpit.WorldMatrix.Down);
             Vector3D speedvectornorm = speedvector / 10;
-            if (speedvectornorm.Length() > 1 )
+            if (speedvectornorm.Length() > 1)
             {
                 speedvectornorm = Vector3D.Normalize(speedvectornorm);
             }
 
-            Vector3D forvard = Vector3D.Normalize(Vector3D.Reflect(cockpit.WorldMatrix.Forward,gravvector)) * cockpit.MoveIndicator.Z;
-            Vector3D left = Vector3D.Normalize(Vector3D.Reflect(cockpit.WorldMatrix.Left, gravvector)) * cockpit.RollIndicator;
+            //управление
+            Vector3D forvard = Vector3D.Normalize(Vector3D.Reflect(cockpit.WorldMatrix.Forward, gravvectornorm)) * cockpit.MoveIndicator.Z;
+            Vector3D left = Vector3D.Normalize(Vector3D.Reflect(cockpit.WorldMatrix.Left, gravvectornorm)) * cockpit.RollIndicator;
 
 
-            Vector3D alignvector = Vector3D.Normalize(gravvector + speedvectornorm / 2 + (forvard + left) / 2);
+            Vector3D alignvector = Vector3D.Normalize(gravvectornorm + speedvectornorm / 2 + (forvard + left) / 1.1);
 
+            //управление гироскопами
             float Pitch = (float)alignvector.Dot(cockpit.WorldMatrix.Backward);
             float Roll = (float)alignvector.Dot(cockpit.WorldMatrix.Left);
             float yaw = cockpit.MoveIndicator.X;
@@ -50,6 +83,12 @@ List<IMyGyro> gyros;
                 gyro.Yaw = yaw * 0.5f;
                 gyro.Pitch = Pitch * gyromult;
                 gyro.Roll = Roll * gyromult;
+            }
+
+            //управление движками
+            foreach (IMyThrust thr in thrusterlist)
+            {
+                thr.ThrustOverride = thrust / thrusterlist.Count;
             }
 
 
