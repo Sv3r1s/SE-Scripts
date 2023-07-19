@@ -1,11 +1,10 @@
-List<IMyGyro> gyros;
-        IMyRemoteControl remcon;
+//------------BEGIN--------------
+        List<IMyGyro> gyros;
         IMyShipController cockpit;
         float gyromult = 2;
 
         public Program()
         {
-            remcon = GridTerminalSystem.GetBlockWithName("RemCon") as IMyRemoteControl;
             cockpit = GridTerminalSystem.GetBlockWithName("Cockpit") as IMyShipController;
             gyros = new List<IMyGyro>();
             GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros);
@@ -29,15 +28,14 @@ List<IMyGyro> gyros;
                     gyro.GyroOverride = false;
                 }
             }
-            Vector3D gravvector = Vector3D.Normalize(remcon.GetNaturalGravity());
-            //gravvector = Vector3D.Reflect(gravvector, remcon.WorldMatrix.Down);
+            Vector3D gravvector = Vector3D.Normalize(cockpit.GetNaturalGravity());
 
-            double gb = gravvector.Dot(remcon.WorldMatrix.Backward);
-            double gl = gravvector.Dot(remcon.WorldMatrix.Left);
-            double gd = gravvector.Dot(remcon.WorldMatrix.Down);
+            double gb = gravvector.Dot(cockpit.WorldMatrix.Backward);
+            double gl = gravvector.Dot(cockpit.WorldMatrix.Left);
+            double gd = gravvector.Dot(cockpit.WorldMatrix.Down);
 
-            float Pitch = (float)Math.Atan2(gb,gd);
-            float Roll = (float)Math.Atan2(gl,gd);
+            float Pitch = (float)Math.Atan2(gb, gd);
+            float Roll = (float)Math.Atan2(gl, gd);
             float yaw = cockpit.RotationIndicator.Y;
             foreach (IMyGyro gyro in gyros)
             {
@@ -45,6 +43,5 @@ List<IMyGyro> gyros;
                 gyro.Pitch = Pitch * gyromult;
                 gyro.Roll = Roll * gyromult;
             }
-
-
         }
+        //------------END--------------
