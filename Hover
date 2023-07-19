@@ -1,4 +1,5 @@
-List<IMyGyro> gyros;
+//------------BEGIN--------------
+        List<IMyGyro> gyros;
         List<IMyThrust> thrusterlist;
         IMyCockpit cockpit;
         float gyromult = 1;
@@ -11,8 +12,11 @@ List<IMyGyro> gyros;
         double AltitudeNorm = 0;
         double x = 0;
         double h = 0;
+        double corect = 0;
 
         int mode = 0;
+
+        bool kamikadze = false;
 
         //Координаты центра планеты
         int Px = -284464;
@@ -102,6 +106,19 @@ List<IMyGyro> gyros;
             desiredelevation += cockpit.MoveIndicator.Y / 5;
             double currentelevation = 0;
             cockpit.TryGetPlanetElevation(MyPlanetElevation.Surface, out currentelevation);
+            if (currentelevation > 1000)
+            {
+                Vector3D v = new Vector3D(0,0, 0);
+                cockpit.TryGetPlanetPosition(out v);
+                Vector3D MyPos = cockpit.GetPosition();
+                if (kamikadze == false)
+                {
+                    kamikadze= true;
+                    corect = (MyPos - v).Length() - currentelevation;
+                }
+                currentelevation = (MyPos - v).Length() - corect;
+            }
+            else kamikadze = false;
             double mass = cockpit.CalculateShipMass().PhysicalMass;
             float vertvelocity = -(float)speedvector.Dot(gravvectornorm);
             float deltaelevation = (float)(desiredelevation - currentelevation);
@@ -118,7 +135,7 @@ List<IMyGyro> gyros;
             }
 
 
-            double StopDis = (Math.Pow(vertvelocity,2) * mass) / (2 * weight);
+            double StopDis = (Math.Pow(vertvelocity, 2) * mass) / (2 * weight);
             double StopDisTR = (Math.Pow(vertvelocity, 2) * mass) / (2 * (maxthr - weight));
 
             //Тяга
@@ -264,3 +281,4 @@ List<IMyGyro> gyros;
             IMyTextSurface LCD = cockpit.GetSurface(0);
             LCD.WriteText("Elevation:" + desiredelevation + "\nSpeed:" + (-cockpit.MoveIndicator.Z) + "\nAltitude:" + AltitudeNorm);
         }
+        //------------END--------------
