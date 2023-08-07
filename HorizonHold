@@ -1,13 +1,18 @@
 //------------BEGIN--------------
+        //---------Version-2.2-----------
+        string ShipName = "Ship1";
+        List<IMyTerminalBlock> GridBlocks;
         List<IMyGyro> gyros;
         IMyShipController cockpit;
         float gyromult = 2;
 
-        public Program()
+        //*--RENAME-THE-ShipName-AND-DELETE-THIS----* public Program()
         {
-            cockpit = GridTerminalSystem.GetBlockWithName("Cockpit") as IMyShipController;
+            GridBlocks = new List<IMyTerminalBlock>();
+            GridTerminalSystem.SearchBlocksOfName(ShipName, GridBlocks);
+            cockpit = GridBlocks.OfType<IMyCockpit>().First();
             gyros = new List<IMyGyro>();
-            GridTerminalSystem.GetBlocksOfType<IMyGyro>(gyros);
+            gyros = GridBlocks.OfType<IMyGyro>().ToList();
         }
 
         public void Main(string argument)
@@ -28,6 +33,7 @@
                     gyro.GyroOverride = false;
                 }
             }
+            else if (argument == "Init") Init();
             Vector3D gravvector = Vector3D.Normalize(cockpit.GetNaturalGravity());
 
             double gb = gravvector.Dot(cockpit.WorldMatrix.Backward);
@@ -42,6 +48,22 @@
                 gyro.Yaw = yaw * 0.5f;
                 gyro.Pitch = Pitch * gyromult;
                 gyro.Roll = Roll * gyromult;
+            }
+        }
+        void Init()
+        {
+            List<IMyTerminalBlock> AllBlocks = new List<IMyTerminalBlock>();
+            GridTerminalSystem.GetBlocks(AllBlocks);
+            //------Search-for-new-blocks--------
+            foreach (IMyTerminalBlock block in GridBlocks)
+            {
+                AllBlocks.Remove(block);
+            }
+            //------Rename-new-blocks----------
+            foreach (IMyTerminalBlock block in AllBlocks)
+            {
+                block.CustomName = block.CustomName + " (" + ShipName + ")";
+                GridBlocks.Add(block);
             }
         }
         //------------END--------------
