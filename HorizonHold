@@ -1,5 +1,5 @@
 //------------BEGIN--------------
-        //---------Version-2.2-----------
+        //---------Version-2.2.1-----------
         string ShipName = "Ship1";
         List<IMyTerminalBlock> GridBlocks;
         List<IMyGyro> gyros;
@@ -10,7 +10,7 @@
         {
             GridBlocks = new List<IMyTerminalBlock>();
             GridTerminalSystem.SearchBlocksOfName(ShipName, GridBlocks);
-            cockpit = GridBlocks.OfType<IMyCockpit>().First();
+            cockpit = GridBlocks.OfType<IMyCockpit>().FirstOrDefault();
             gyros = new List<IMyGyro>();
             gyros = GridBlocks.OfType<IMyGyro>().ToList();
         }
@@ -62,7 +62,7 @@
             //------Rename-new-blocks----------
             foreach (IMyTerminalBlock block in AllBlocks)
             {
-                block.CustomName = block.CustomName + " (" + ShipName + ")";
+                block.CustomName = block.CustomName + " [" + ShipName + "]";
                 GridBlocks.Add(block);
             }
         }
